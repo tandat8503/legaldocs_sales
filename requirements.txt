@@ -1,0 +1,25 @@
+# Vector Database
+pymilvus==2.5.11
+
+# Machine Learning & NLP
+sentence-transformers==2.5.1
+scikit-learn==1.5.2
+
+# Environment & Configuration
+python-dotenv==1.1.0
+
+# Document Processing
+PyMuPDF==1.23.8
+
+# GUI
+PyQt5==5.15.10
+
+# File System
+watchdog==3.0.0
+
+# HTTP Client
+requests==2.31.0
+
+# Type Checking
+mypy==1.8.0
+types-requests==2.31.0.20240125

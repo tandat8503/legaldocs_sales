@@ -1,0 +1,5 @@
+Alice Williams | Email: alice.williams@test.org | Address: 6903 Elm St, Phoenix, USA | Purchase: Monitor | Amount: $725.64 | Date: 2025-03-16
+Customer ID: 514204200 | Name: Bob Wilson | Email: bob.wilson@demo.net | Address: 4739 Oak St, New York, USA | Purchase: Phone | Amount: $213.32 | Date: 2021-02-13
+Customer ID: 986847695 | Name: Charlie Smith | Email: charlie.smith@demo.net | Address: 9193 Broadway, Los Angeles, USA | Purchase: Laptop | Amount: $457.27 | Date: 2022-01-08
+Customer ID: 114772574 | Name: Jane Doe | Email: jane.doe@example.com | Address: 5316 Elm St, Chicago, USA | Purchase: Printer | Amount: $1139.37 | Date: 2021-12-28
+Customer ID: 966832648 | Name: Charlie Davis | Email: charlie.davis@demo.net | Address: 5748 Oak St, Los Angeles, USA | Purchase: Mouse | Amount: $141.22 | Date: 2021-02-26
