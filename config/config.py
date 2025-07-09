@@ -1,5 +1,6 @@
+from dotenv import load_dotenv
 import os
-
+load_dotenv()
 LLM_API_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 

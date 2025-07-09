@@ -35,7 +35,7 @@ def embed_chunks(chunks: List[str]) -> List[List[float]]:
         # Only show progress bar for large batches
         show_progress = len(batch) > 10
         batch_embeddings = model.encode(batch, show_progress_bar=show_progress)
-        all_embeddings.extend(batch_embeddings.tolist())
+        all_embeddings.extend([emb.tolist() for emb in batch_embeddings])
     
     embed_time = time.time() - start_time
     print(f"⏱️ Embedding {len(chunks)} chunks took {embed_time:.2f} seconds")

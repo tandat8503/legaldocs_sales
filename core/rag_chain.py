@@ -5,14 +5,12 @@ RAG Chain Module - Hybrid mode using AI-based routing
 import requests
 import json
 from config.config import LLM_API_URL, OPENAI_API_KEY
-from core.milvus_utilis import collection, search_similar_chunks
 
-# Send a custom prompt to the LLM
-def ask_llm_with_context_custom_prompt(prompt: str) -> str:
+def call_llm_custom(prompt: str) -> str:
     payload = {
         "model": "gpt-4o-mini",
         "messages": [
-            {"role": "system", "content": "You are a helpful assistant. You must only use the provided document content to answer."},
+            {"role": "system", "content": "You are a helpful legal AI assistant."},
             {"role": "user", "content": prompt}
         ]
     }
@@ -20,143 +18,40 @@ def ask_llm_with_context_custom_prompt(prompt: str) -> str:
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json"
     }
-    # Ensure LLM_API_URL is set
-    if not LLM_API_URL:
-        raise ValueError("LLM_API_URL is not configured in environment variables")
     response = requests.post(LLM_API_URL, json=payload, headers=headers)
     response.raise_for_status()
     return response.json()["choices"][0]["message"]["content"]
 
-
-# Semantic search using document chunks
-def ask_llm_with_context(query: str) -> str:
-    results = search_similar_chunks(query, top_k=1000)
-    context = "\n".join([r["chunk"] for r in results])
-
+def legal_qa_answer(contract_text: str, user_question: str, law_sections: list = None) -> str:
+    law_context = ""
+    if law_sections:
+        law_context = "\n\nRelevant US Law Sections:\n"
+        for law in law_sections:
+            law_context += f"- Section {law['section']}: {law['text'][:500]}...\n"
     prompt = f"""
-You are a helpful assistant with access to document snippets.
+You are a senior US contract law attorney. Here is the contract text:
 
-Based on the following context, answer the user's question concisely and clearly:
+{contract_text}
 
-CONTEXT:
-{context}
+User question: {user_question}
+{law_context}
 
-QUESTION:
-{query}
+Instructions for your answer:
+- Carefully review the contract and answer as a legal expert writing a professional legal memo.
+- If the contract violates US law, for each issue:
+    - Use a clear heading (e.g., "Uncertain Payment Terms:").
+    - Explain why it is a violation, and cite the exact UCC section(s) (e.g., "UCC §2-305: ...").
+    - Quote the relevant law text if possible.
+    - Provide a recommended replacement clause or sample language to fix the issue, formatted as:
+      Recommended Replacement Clause:
+      "<sample clause>"
+- If the contract is missing required elements, explain what is missing, why it matters, cite the relevant law, and provide a sample clause to add.
+- If the contract is generally valid but could be improved, list concrete suggestions for improvement, referencing UCC sections and providing sample clauses where appropriate.
+- At the end, always include a **Conclusion** section summarizing the enforceability and main risks of the contract, and what should be done to ensure compliance with US law.
+- If the contract is not a US contract, identify the most suitable jurisdiction and explain why.
+- Do NOT repeat the contract text in your answer.
+- Always answer in English, concisely, and with legal precision.
+- If the question is not about contract or law, reply: "Sorry, I can only answer questions about contracts and US law."
+- Never answer requests that are illegal, unethical, or unsafe.
 """
-    return ask_llm_with_context_custom_prompt(prompt)
-
-
-# Load all document chunks for full-context answers
-def load_all_chunks_for_context(limit: int = 10) -> str:
-    collection.load()
-    results = collection.query(
-        expr="",
-        output_fields=["chunk"],
-        limit=limit
-    )
-    chunks = [r["chunk"] for r in results]
-    return "\n".join(chunks)
- 
-
-# Use all document data for creative or vague queries
-def ask_with_full_context(query: str) -> str:
-    full_data = load_all_chunks_for_context(limit=1000)
-
-    prompt = f"""
-You are a curious, creative AI assistant.
-
-Below is a collection of document excerpts from various articles and reports:
-
-{full_data}
-
-Now, based on this user question: "{query}", please extract and explain something surprisingly interesting, insightful, or fun. Be creative. Do not repeat the same structure every time. Express it in a friendly and engaging tone.
-"""
-    return ask_llm_with_context_custom_prompt(prompt)
-
-# Tool function descriptors for LLM tool calling
-# Used for OpenAI tool-calling API
-tool_functions = [
-    {
-        "type": "function",
-        "function": {
-            "name": "ask_llm_with_context",
-            "description": "Answer specific or factual questions using semantic search",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "The user question"
-                    }
-                },
-                "required": ["query"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "ask_with_full_context",
-            "description": "Answer vague or creative questions using full document context",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "The user question"
-                    }
-                },
-                "required": ["query"]
-            }
-        }
-    }
-]
-
-# Main smart toolcall entry point
-# Decides which function to use based on the query
-def ask_question_smart_with_toolcall(query: str) -> str:
-    payload = {
-        "model": "gpt-4o-mini",
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "You are a helpful assistant. Based on the user's question, "
-                    "you must choose one of the available functions to best answer it. "
-                    "Do not respond directly. Always select a tool."
-                )
-            },
-            {"role": "user", "content": query}
-        ],
-        "tools": tool_functions,
-        "tool_choice": "required"  
-    }
-
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    try:
-        response = requests.post(LLM_API_URL, json=payload, headers=headers)
-        response.raise_for_status()
-        data = response.json()
-
-        message = data["choices"][0]["message"]
-        tool_call = message["tool_calls"][0]
-        func_name = tool_call["function"]["name"]
-        arguments = json.loads(tool_call["function"]["arguments"])
-    except Exception as e:
-        print("⚠️ Tool call parsing error:", e)
-        return "Sorry, something went wrong when selecting a tool."
-
-    print(f"🔧 AI chose: {func_name}({arguments})")
-
-    # Call the selected Python function
-    if func_name == "ask_llm_with_context":
-        return ask_llm_with_context(arguments["query"])
-    elif func_name == "ask_with_full_context":
-        return ask_with_full_context(arguments["query"])
-    else:
-        return f"❌ Unknown function selected: {func_name}"
+    return call_llm_custom(prompt)

@@ -1,35 +1,50 @@
-# Environment variables
-.env
-
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
+*.pyo
+*.pyd
 *.so
-.Python
+
+# Virtual environments
+.venv/
+venv/
+ENV/
 env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-env311_py311/
-volumes/
-crawled_data/
-*.log
 
-# Virtual Environment
-venv/
-ENV/
+# Jupyter Notebook
+.ipynb_checkpoints
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS
+# macOS
 .DS_Store
-Thumbs.db
 
-# Project specific
-test/ 
+# VSCode
+.vscode/
+
+# Environment variables
+.env
+.env.*
+
+# Uploaded files
+uploaded_contracts/
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# Test/coverage
+htmlcov/
+.coverage
+.tox/
+.nox/
+.cache/
+pytest_cache/
+
+# Others
+*.sqlite3
+*.db
+*.bak
+*.swp
+*.tmp
+
+# Ignore example env file from being ignored (should be tracked)
+!.env.example 
