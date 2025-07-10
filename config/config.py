@@ -3,6 +3,7 @@ import os
 load_dotenv()
 LLM_API_URL = "https://vibe-agent-gateway.eternalai.org/v1/chat/completions"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+LLM_MODEL_ID = os.getenv("LLM_MODEL_ID", "gpt-4o-mini")
 
 if not LLM_API_URL:
     raise ValueError("Chưa thiết lập LLM_API_URL trong .env")

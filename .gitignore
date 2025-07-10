@@ -48,3 +48,9 @@ pytest_cache/
 
 # Ignore example env file from being ignored (should be tracked)
 !.env.example 
+
+volumes/
+   uploaded_contracts/
+   *.db
+   *.wal
+   *.LOG

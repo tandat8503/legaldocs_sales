@@ -22,7 +22,7 @@ def extract_text_from_file(file_storage):
         doc = fitz.open("pdf", file_bytes)
         text = ""
         for page in doc:
-            text += page.getText("text")
+            text += page.get_text("text")
         doc.close()
         return text
     elif ext == '.docx':
