@@ -44,7 +44,7 @@ legal_docs_sales/
 1. **Clone & setup environment**
 
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/tandat8503/legaldocs_sales.git
    python3 -m venv .venv
    source .venv/bin/activate
    pip install -r requirements.txt
