@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, session, redirect, url_for
 from core.rag_chain import legal_qa_answer
-import fitz as pymupdf  # PyMuPDF
+import fitz # PyMuPDF
 import docx
 from io import BytesIO
 from core.semantic_search import search_law_sections
@@ -19,10 +19,10 @@ def extract_text_from_file(file_storage):
         return file_storage.read().decode('utf-8')
     elif ext == '.pdf':
         file_bytes = file_storage.read()
-        doc = pymupdf.open("pdf", file_bytes)
+        doc = fitz.open("pdf", file_bytes)
         text = ""
         for page in doc:
-            text += page.get_text()
+            text += page.getText("text")
         doc.close()
         return text
     elif ext == '.docx':
@@ -49,6 +49,10 @@ def index():
         if 'finish_session' in request.form:
             session.pop('contract_text', None)
             return redirect(url_for('index'))
+        # Handle upload new contract
+        if 'upload_new_contract' in request.form:
+            session.pop('contract_text', None)
+            return redirect(url_for('index'))
         # Handle file upload
         contract_file = request.files.get('contract')
         if contract_file and contract_file.filename:
@@ -64,13 +68,15 @@ def index():
         elif len(user_question) > 500:
             error = "Question is too long (max 500 characters)."
         else:
+            # Tìm các section luật liên quan nhất với hợp đồng
             relevant_law_sections = search_law_sections(contract_text, top_k=5)
             answer = legal_qa_answer(contract_text, user_question, relevant_law_sections)
-            if answer and len(answer) > 2000:
-                answer = answer[:2000] + "\n[Truncated for length]"
+            # Loại bỏ dòng <think> hoặc </think> nếu có
+            if answer:
+                answer = re.sub(r'<\/?think>', '', answer, flags=re.IGNORECASE).lstrip()
             if not answer or "I cannot answer" in answer or "Sorry" in answer:
                 answer = "Sorry, I cannot answer this question."
     return render_template('index.html', answer=answer, contract=contract_text, error=error, relevant_law_sections=relevant_law_sections)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=8050, host='0.0.0.0')

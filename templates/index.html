@@ -63,6 +63,9 @@
       <button class="btn" type="submit" name="finish_session" value="1">
         Finish Session
       </button>
+      <button class="btn" type="submit" name="upload_new_contract" value="1">
+        Upload new contract
+      </button>
       {% endif %}
     </form>
     {% if error %}
@@ -71,6 +74,24 @@
     <div class="result">
       <h3>Answer:</h3>
       <div style="white-space: pre-wrap">{{ answer }}</div>
+    </div>
+    {% endif %} {% if relevant_law_sections and relevant_law_sections|length > 0
+    %}
+    <div class="result">
+      <h3 class="section-title">Relevant Law Sections:</h3>
+      <ul>
+        {% for section in relevant_law_sections %}
+        <li style="margin-bottom: 15px">
+          <b>File:</b> {{ section.filename }}<br />
+          <!-- <b>Score:</b> {{ '%.3f'|format(section.score) }}<br /> -->
+          <b>Content:</b>
+          <span style="white-space: pre-wrap"
+            >{{ section.chunk[:300] }}{% if section.chunk|length > 300 %}...{%
+            endif %}</span
+          >
+        </li>
+        {% endfor %}
+      </ul>
     </div>
     {% endif %}
   </body>

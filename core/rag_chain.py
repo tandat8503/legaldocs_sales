@@ -4,6 +4,7 @@ RAG Chain Module - Hybrid mode using AI-based routing
 
 import requests
 import json
+from typing import Optional
 from config.config import LLM_API_URL, OPENAI_API_KEY
 
 def call_llm_custom(prompt: str) -> str:
@@ -22,12 +23,12 @@ def call_llm_custom(prompt: str) -> str:
     response.raise_for_status()
     return response.json()["choices"][0]["message"]["content"]
 
-def legal_qa_answer(contract_text: str, user_question: str, law_sections: list = None) -> str:
+def legal_qa_answer(contract_text: str, user_question: str, law_sections:Optional[list] = None) -> str:
     law_context = ""
     if law_sections:
         law_context = "\n\nRelevant US Law Sections:\n"
         for law in law_sections:
-            law_context += f"- Section {law['section']}: {law['text'][:500]}...\n"
+            law_context += f"- Section {law['filename']}: {law['chunk'][:500]}...\n"
     prompt = f"""
 You are a senior US contract law attorney. Here is the contract text:
 
