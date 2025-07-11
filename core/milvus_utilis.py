@@ -30,11 +30,14 @@ def get_or_create_collection(name):
 laws_collection = get_or_create_collection("laws")
 contracts_collection = get_or_create_collection("contracts")
 
-def save_to_laws(chunks, filename, vectors=None):
+def save_to_laws(chunk_objs, filename, vectors=None):
+    # chunk_objs là list dict, mỗi dict có 'text', 'article_code', 'section_id', 'filename', 'chunk_id'
+    chunks = [obj["text"] for obj in chunk_objs]
     if vectors is None:
         vectors = embed_chunks(chunks)
     ids = [str(uuid.uuid4()) for _ in chunks]
-    filenames = [filename] * len(chunks)
+    filenames = [obj["filename"] for obj in chunk_objs]
+    # Nếu schema Milvus chỉ có id, filename, chunk, embedding:
     laws_collection.insert([ids, filenames, chunks, vectors])
     laws_collection.flush()
 
@@ -57,9 +60,9 @@ def search_laws(query, top_k=5):
         limit=top_k,
         output_fields=["chunk", "filename"]
     )
-
+    # results là list các list, mỗi list cho một truy vấn
     matches = []
-    for hit in results[0]:  # results là list các list, mỗi list cho một truy vấn
+    for hit in results[0]:
         matches.append({
             "score": hit.score,
             "chunk": hit.entity.get("chunk"),
@@ -82,6 +85,7 @@ def search_contracts(query, filename=None, top_k=5):
         output_fields=["chunk", "filename"],
         expr=expr
     )
+    # results là list các list, mỗi list cho một truy vấn
     matches = []
     for hit in results[0]:
         matches.append({

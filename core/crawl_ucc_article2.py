@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import os
 
 BASE_URL = "https://www.law.cornell.edu"
-ARTICLE2_URL = "https://www.law.cornell.edu/ucc/2"
+ARTICLE2_URL = "https://www.law.cornell.edu/ucc/1"
 SAVE_DIR = "chatbot/legal_data/ucc_article2_sections"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
@@ -13,7 +13,7 @@ def crawl_article2_sections():
     links = set()
     for a in soup.find_all("a", href=True):
         href = a.get("href")
-        if isinstance(href, str) and href.startswith("/ucc/2/2-"):
+        if isinstance(href, str) and href.startswith("/ucc/1/1-"):
             links.add(href)
     for href in links:
         section_url = BASE_URL + href
