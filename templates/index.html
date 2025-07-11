@@ -99,8 +99,70 @@
         }
       }
     </style>
+    <script>
+      function showLoading() {
+        document.getElementById("loading-overlay").style.display = "flex";
+        document.getElementById("submit-btn").disabled = true;
+      }
+      window.onload = function () {
+        var form = document.querySelector("form");
+        if (form) {
+          form.onsubmit = showLoading;
+        }
+      };
+    </script>
   </head>
   <body>
+    <div
+      id="loading-overlay"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(255, 255, 255, 0.7);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div style="text-align: center">
+        <svg width="60" height="60" viewBox="0 0 50 50">
+          <circle
+            cx="25"
+            cy="25"
+            r="20"
+            fill="none"
+            stroke="#2a7be4"
+            stroke-width="5"
+            stroke-linecap="round"
+            stroke-dasharray="31.4 31.4"
+            transform="rotate(-90 25 25)"
+          >
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from="0 25 25"
+              to="360 25 25"
+              dur="1s"
+              repeatCount="indefinite"
+            />
+          </circle>
+        </svg>
+        <div
+          style="
+            margin-top: 16px;
+            color: #195bb0;
+            font-weight: 600;
+            font-size: 1.1rem;
+          "
+        >
+          Processing...
+        </div>
+      </div>
+    </div>
     <div class="container">
       <h1>Legal Contract AI Agent</h1>
       <form method="post" enctype="multipart/form-data">
@@ -123,7 +185,9 @@
         <div
           style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px"
         >
-          <button class="btn" type="submit">Submit Question</button>
+          <button class="btn" id="submit-btn" type="submit">
+            Submit Question
+          </button>
           {% if contract %}
           <button class="btn" type="submit" name="finish_session" value="1">
             Finish Session
