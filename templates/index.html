@@ -172,9 +172,15 @@
           type="file"
           name="contract"
           id="contract"
-          required
           title="Upload contract file"
         />
+        {% else %}
+        <div
+          class="info"
+          style="margin-bottom: 12px; color: #195bb0; font-weight: 500"
+        >
+          You are asking about contract: <b>{{ contract_filename }}</b>
+        </div>
         {% endif %}
         <label for="user_question"
           >Enter your legal question about the contract:</label
@@ -224,6 +230,19 @@
               endif %}</span
             >
           </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %} {% if contract and question_history and
+      question_history|length > 0 %}
+      <div
+        class="result"
+        style="background: #fffbe7; border: 1px solid #ffe082; margin-top: 18px"
+      >
+        <b>Question history for this contract:</b>
+        <ul>
+          {% for q in question_history %}
+          <li>{{ q }}</li>
           {% endfor %}
         </ul>
       </div>
