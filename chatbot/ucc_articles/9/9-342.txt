@@ -1,10 +1,2 @@
 § 9-342. BANK’S RIGHT TO REFUSE TO ENTER INTO OR DISCLOSE EXISTENCE OF CONTROL AGREEMENT.
-This article does not require a
-bank
-to
-	enter into an agreement of the kind described in Section
-9-104(a)
-(2),
-	even if its customer so requests or directs. A bank that has entered into such
-	an agreement is not required to confirm the existence of the agreement to another
-	person unless requested to do so by its customer.
+This article does not require a bank to enter into an agreement of the kind described in Section 9-104(a) (2), even if its customer so requests or directs. A bank that has entered into such an agreement is not required to confirm the existence of the agreement to another person unless requested to do so by its customer.

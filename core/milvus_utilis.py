@@ -49,8 +49,8 @@ def save_to_contracts(chunks, filename, vectors=None):
     contracts_collection.insert([ids, filenames, chunks, vectors])
     contracts_collection.flush()
 
-def search_laws(query, top_k=5):
-    query_vectors = embed_chunks([query])
+def search_laws(query, top_k=5, model_override=None):
+    query_vectors = embed_chunks([query], model_override=model_override)
     query_vector = query_vectors[0]
     laws_collection.load()
     results = laws_collection.search(
@@ -60,7 +60,6 @@ def search_laws(query, top_k=5):
         limit=top_k,
         output_fields=["chunk", "filename"]
     )
-    # results là list các list, mỗi list cho một truy vấn
     matches = []
     for hit in results[0]:
         matches.append({
@@ -70,8 +69,8 @@ def search_laws(query, top_k=5):
         })
     return matches
 
-def search_contracts(query, filename=None, top_k=5):
-    query_vectors = embed_chunks([query])
+def search_contracts(query, filename=None, top_k=5, model_override=None):
+    query_vectors = embed_chunks([query], model_override=model_override)
     query_vector = query_vectors[0]
     contracts_collection.load()
     expr = None
@@ -85,7 +84,6 @@ def search_contracts(query, filename=None, top_k=5):
         output_fields=["chunk", "filename"],
         expr=expr
     )
-    # results là list các list, mỗi list cho một truy vấn
     matches = []
     for hit in results[0]:
         matches.append({

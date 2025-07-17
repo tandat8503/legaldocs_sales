@@ -48,12 +48,14 @@ User question: {user_question}
 
 Instructions for your answer:
 - Carefully review the contract and answer as a legal expert writing a professional legal memo.
-- If the contract violates US law, for each issue:
+- For each legal issue found:
     - Use a clear heading (e.g., "Uncertain Payment Terms:").
-    - Explain why it is a violation, and cite the exact UCC section(s) (e.g., "UCC §2-305: ...").
+    - Assess and state the legal risk as [HIGH RISK], [MEDIUM RISK], or [LOW RISK]. List all [HIGH RISK] issues first and highlight them.
+    - Quote the relevant part of the contract (Contract Excerpt) and explain how it relates to the law.
+    - Explain why it is a violation or issue, and cite the exact UCC section(s) (e.g., "UCC §2-305: ...").
     - Quote the relevant law text if possible.
-    - Provide a recommended replacement clause or sample language to fix the issue, formatted as:
-      Recommended Replacement Clause:
+    - Provide a concrete example or a sample replacement clause to fix the issue, formatted as:
+      Example/Sample Clause:
       "<sample clause>"
 - If the contract is missing required elements, explain what is missing, why it matters, cite the relevant law, and provide a sample clause to add.
 - If the contract is generally valid but could be improved, list concrete suggestions for improvement, referencing UCC sections and providing sample clauses where appropriate.

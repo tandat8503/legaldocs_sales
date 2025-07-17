@@ -1,4 +1,2 @@
 § 8-111. CLEARING CORPORATION RULES.
-A rule adopted by a clearing corporation governing rights and obligations among the clearing corporation and its participants in the clearing corporation is
-effective
-even if the rule conflicts with this [Act] and affects another party who does not consent to the rule.
+A rule adopted by a clearing corporation governing rights and obligations among the clearing corporation and its participants in the clearing corporation is effective even if the rule conflicts with this [Act] and affects another party who does not consent to the rule.

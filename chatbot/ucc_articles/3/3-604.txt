@@ -1,30 +1,6 @@
-§ 3-604. DISCHARGE	BY CANCELLATION OR RENUNCIATION.
+§ 3-604. DISCHARGE BY CANCELLATION OR RENUNCIATION.
+(a) A person entitled to enforce an instrument , with or without consideration , may discharge the obligation of a party to pay the instrument (i) by an intentional voluntary act, such as surrender of the instrument to the party, destruction, mutilation, or cancellation of the instrument, cancellation or striking out of the party's signature, or the addition of words to the instrument indicating discharge, or (ii) by agreeing not to sue or otherwise renouncing rights against the party by a signed record.
 
-(a) A
-person
-		entitled to enforce
-an
-instrument
-, with or without
-consideration
-,
-		may discharge the obligation of	a
-party
-to pay the instrument
-		(i) by an intentional voluntary act, such as surrender of the instrument to
-		the party, destruction, mutilation, or cancellation of the instrument, cancellation
-		or striking out of the party's signature, or the addition of words to the instrument
-		indicating discharge, or (ii) by agreeing not to sue or otherwise renouncing
-		rights against the party	by a signed record.
-(b) Cancellation or striking
-	out of an
-indorsement
-pursuant to subsection (a)
-	does not affect the status and rights of a
-party
-derived
-	from the indorsement.
-(c) As used in this section, "signed," with
-	respect to a record that is not a writing, includes the attachment to or logical
-	association with the record of an electronic symbol, sound, or process to or
-	with the record with the present intent to adopt or accept the record.
+(b) Cancellation or striking out of an indorsement pursuant to subsection (a) does not affect the status and rights of a party derived from the indorsement.
+
+(c) As used in this section, "signed," with respect to a record that is not a writing, includes the attachment to or logical association with the record of an electronic symbol, sound, or process to or with the record with the present intent to adopt or accept the record.

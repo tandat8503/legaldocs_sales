@@ -1,6 +1,8 @@
 § 7-103. Relation of Article to Treaty or Statute.
-
 (a) This article is subject to any treaty or statute of the United States or a regulatory statute of this State to the extent the treaty, statute, or regulatory statute is applicable.
+
 (b) This article does not repeal or modify any law prescribing the form or contents of a document of title or the services or facilities to be afforded by a bailee, or otherwise regulating a bailee's businesses in respects not specifically treated in this article. However, violation of these laws does not affect the status of a document of title that otherwise complies with the definition of a document of title.
+
 (c) This [Act] modifies, limits, and supersedes the federal Electronic Signatures in Global and National Commerce Act (15 U.S.C. Section 7001, et. seq.) but does not modify, limit, or supersede Section 101(c) of that act (15 U.S.C. Section 7001(c)) or authorize electronic delivery of any of the notices described in Section 103(b) of that act (15 U.S.C. Section 7003(b)).
+
 (d) To the extent there is a conflict between the Uniform Electronic Transactions Act and this article, this article governs.

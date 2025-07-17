@@ -27,16 +27,15 @@ def split_into_chunks(text: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OV
         start += size - overlap
     return chunks
 
-def embed_chunks(chunks: List[str]) -> List[List[float]]:
+def embed_chunks(chunks: List[str], model_override=None) -> List[List[float]]:
     start_time = time.time()
     all_embeddings = []
+    used_model = model_override if model_override is not None else model
     for i in range(0, len(chunks), BATCH_SIZE):
         batch = chunks[i:i + BATCH_SIZE]
-        # Only show progress bar for large batches
         show_progress = len(batch) > 10
-        batch_embeddings = model.encode(batch, show_progress_bar=show_progress)
+        batch_embeddings = used_model.encode(batch, show_progress_bar=show_progress)
         all_embeddings.extend([emb.tolist() for emb in batch_embeddings])
-    
     embed_time = time.time() - start_time
     print(f"⏱️ Embedding {len(chunks)} chunks took {embed_time:.2f} seconds")
     return all_embeddings

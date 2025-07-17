@@ -1,12 +1,4 @@
 § 8-207. RIGHTS AND DUTIES OF ISSUER WITH RESPECT TO REGISTERED OWNERS.
+(a) Before due presentment for registration of transfer of a certificated security in registered form or of an instruction requesting registration of transfer of an uncertificated security , the issuer or indenture trustee may treat the registered owner as the person exclusively entitled to vote, receive notifications, and otherwise exercise all the rights and powers of an owner.
 
-(a) Before due presentment for registration of transfer of a certificated security in
-registered form
-or of an
-instruction
-requesting registration of transfer of an
-uncertificated security
-, the
-issuer
-or indenture trustee may treat the registered owner as the person exclusively entitled to vote, receive notifications, and otherwise exercise all the rights and powers of an owner.
 (b) This Article does not affect the liability of the registered owner of a security for a call, assessment, or the like.

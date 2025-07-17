@@ -1,7 +1,2 @@
 § 4-206. TRANSFER BETWEEN BANKS.
-
-Any agreed method that identifies the transferor
-bank
-is sufficient for the
-item's
-further transfer to another bank.
+Any agreed method that identifies the transferor bank is sufficient for the item's further transfer to another bank.
