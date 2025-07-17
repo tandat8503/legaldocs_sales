@@ -10,6 +10,9 @@ def get_or_create_collection(name):
         FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=200),
         FieldSchema(name="chunk", dtype=DataType.VARCHAR, max_length=1000),
         FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=384),
+        FieldSchema(name="article_code", dtype=DataType.VARCHAR, max_length=20),
+        FieldSchema(name="section_id", dtype=DataType.VARCHAR, max_length=20),
+        FieldSchema(name="chunk_id", dtype=DataType.INT64),
     ]
     schema = CollectionSchema(fields, description=f"{name} Chunks")
     try:
@@ -37,8 +40,10 @@ def save_to_laws(chunk_objs, filename, vectors=None):
         vectors = embed_chunks(chunks)
     ids = [str(uuid.uuid4()) for _ in chunks]
     filenames = [obj["filename"] for obj in chunk_objs]
-    # Nếu schema Milvus chỉ có id, filename, chunk, embedding:
-    laws_collection.insert([ids, filenames, chunks, vectors])
+    article_codes = [obj["article_code"] for obj in chunk_objs]
+    section_ids = [obj["section_id"] for obj in chunk_objs]
+    chunk_ids = [obj["chunk_id"] for obj in chunk_objs]
+    laws_collection.insert([ids, filenames, chunks, vectors, article_codes, section_ids, chunk_ids])
     laws_collection.flush()
 
 def save_to_contracts(chunks, filename, vectors=None):
@@ -46,27 +51,54 @@ def save_to_contracts(chunks, filename, vectors=None):
         vectors = embed_chunks(chunks)
     ids = [str(uuid.uuid4()) for _ in chunks]
     filenames = [filename] * len(chunks)
-    contracts_collection.insert([ids, filenames, chunks, vectors])
+    # Để tương thích, chèn các trường rỗng cho contracts (nếu muốn mở rộng schema cho contracts tương tự laws)
+    article_codes = [""] * len(chunks)
+    section_ids = [""] * len(chunks)
+    chunk_ids = list(range(len(chunks)))
+    contracts_collection.insert([ids, filenames, chunks, vectors, article_codes, section_ids, chunk_ids])
     contracts_collection.flush()
 
-def search_laws(query, top_k=5, model_override=None):
+def search_laws(query, top_k=5, article_code=None, section_id=None, keyword=None, model_override=None):
+    """
+    Advanced semantic search for law sections with filtering.
+    - article_code: filter by Article (e.g., '2', '2A', ...)
+    - section_id: filter by Section (e.g., '2-201', ...)
+    - keyword: filter by keyword in chunk text
+    - model_override: specify embedding model if needed
+    Returns a list of dicts: score, chunk, filename, article_code, section_id, chunk_id
+    """
     query_vectors = embed_chunks([query], model_override=model_override)
     query_vector = query_vectors[0]
     laws_collection.load()
+    exprs = []
+    if article_code:
+        exprs.append(f'article_code == "{article_code}"')
+    if section_id:
+        exprs.append(f'section_id == "{section_id}"')
+    expr = " and ".join(exprs) if exprs else None
     results = laws_collection.search(
         data=[query_vector],
         anns_field="embedding",
         param={"metric_type": "IP", "params": {"nprobe": 32}},
-        limit=top_k,
-        output_fields=["chunk", "filename"]
+        limit=top_k * 2,  # lấy nhiều hơn để lọc keyword nếu cần
+        output_fields=["chunk", "filename", "article_code", "section_id", "chunk_id"],
+        expr=expr
     )
     matches = []
     for hit in results[0]:
+        chunk_text = hit.get("chunk", "")
+        if keyword and keyword.lower() not in chunk_text.lower():
+            continue
         matches.append({
-            "score": hit.score,
-            "chunk": hit.entity.get("chunk"),
-            "filename": hit.entity.get("filename")
+            "score": hit.get("_score", 0),
+            "chunk": chunk_text,
+            "filename": hit.get("filename"),
+            "article_code": hit.get("article_code"),
+            "section_id": hit.get("section_id"),
+            "chunk_id": hit.get("chunk_id"),
         })
+        if len(matches) >= top_k:
+            break
     return matches
 
 def search_contracts(query, filename=None, top_k=5, model_override=None):
@@ -87,9 +119,9 @@ def search_contracts(query, filename=None, top_k=5, model_override=None):
     matches = []
     for hit in results[0]:
         matches.append({
-            "score": hit.score,
-            "chunk": hit.entity.get("chunk"),
-            "filename": hit.entity.get("filename")
+            "score": hit.get("_score", 0),
+            "chunk": hit.get("chunk"),
+            "filename": hit.get("filename")
         })
     return matches
 

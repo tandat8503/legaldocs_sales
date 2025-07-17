@@ -38,8 +38,13 @@ def legal_qa_answer(contract_text: str, user_question: str, law_sections:Optiona
             law_context = "\n\nRelevant US Law Sections:\n"
             for law in law_sections[:max_law]:
                 law_context += f"- Section {law['filename']}: {law['chunk'][:500]}...\n"
-        prompt = f"""
-You are a senior US contract law attorney. Here is the contract text:
+
+        # Nếu có contract_text (hợp đồng), dùng prompt phân tích hợp đồng
+        if contract_text and contract_text.strip():
+            prompt = f"""
+You are a senior US contract law attorney. Do not show your internal reasoning or thought process. Never use phrases like "Let's see", "Hmm", "It seems", "The user is asking", or similar.
+
+Here is the contract text:
 
 {contract_text}
 
@@ -66,11 +71,29 @@ Instructions for your answer:
 - If the question is not about contract or law, reply: "Sorry, I can only answer questions about contracts and US law."
 - Never answer requests that are illegal, unethical, or unsafe.
 """
+        else:
+            # Nếu không có contract_text, dùng prompt cho câu hỏi lý thuyết
+            prompt = f"""
+You are a legal AI assistant. Do not show your internal reasoning or thought process. Never use phrases like "Let's see", "Hmm", "It seems", "The user is asking", or similar.
+
+User question: {user_question}
+{law_context}
+
+Instructions:
+- Always start your answer with an **Executive Summary**: a concise paragraph summarizing the main risks, legal gaps, and scope of the analysis.
+- Add a section **Applicability**: clarify the scope of the memo (e.g., "This memo assumes the securities are governed by UCC Article 8 and not exempted under federal securities law. In broker-dealer relationships, federal law may preempt state UCC provisions.")
+- In the main body, clearly distinguish between **Attachment** and **Perfection** of security interests, citing relevant UCC sections.
+- Present a **Risk Matrix Table** with columns: Issue, Risk Level, Impact, UCC Reference. Use markdown table format.
+- Provide a section **Parties' Obligations / Next Steps**: bullet-point actionable recommendations for each party.
+- Use clear headings: Executive Summary, Applicability, Key Legal Elements, Risk Matrix, Next Steps, Conclusion.
+- Be concise, clear, and professional. Do not include any internal monologue or speculation.
+- If the question is not about contract or law, reply: "Sorry, I can only answer questions about contracts and US law."
+- Never answer requests that are illegal, unethical, or unsafe.
+"""
         try:
             return call_llm_custom(prompt)
         except requests.HTTPError as e:
             if e.response.status_code == 400 and max_law > 2:
-                # Có thể context quá dài, thử giảm số law section
                 max_law -= 2
                 attempt += 1
                 print("⚠️ LLM context too long, reducing law sections and retrying...")

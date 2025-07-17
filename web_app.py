@@ -39,24 +39,38 @@ def is_english(text):
     # Simple check: only allow English letters, numbers, and common punctuation
     return re.match(r'^[A-Za-z0-9 .,;:?!\'\"()\-\n]+$', text) is not None
 
+def is_contract_text(text):
+    # Kiểm tra các từ khóa phổ biến của hợp đồng
+    contract_keywords = ["agreement", "contract", "party", "obligation", "term", "warranty", "governing law", "indemnify", "confidentiality", "termination", "liability"]
+    return any(kw in text.lower() for kw in contract_keywords)
+
+def is_legal_question(question):
+    # Kiểm tra các từ khóa phổ biến về luật/hợp đồng
+    legal_keywords = ["law", "ucc", "contract", "agreement", "clause", "legal", "section", "article", "obligation", "liability", "warranty", "governing law"]
+    return any(kw in question.lower() for kw in legal_keywords)
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     answer = ""
     error = ""
     contract_text = session.get('contract_text', '')
+    contract_filename = session.get('contract_filename', '')
     relevant_law_sections = []
     # Initialize or get the QA cache from session
     qa_cache = session.get('qa_cache', {})
+    question_history = []
 
     if request.method == 'POST':
         # Handle finish session
         if 'finish_session' in request.form:
             session.pop('contract_text', None)
+            session.pop('contract_filename', None)
             session.pop('qa_cache', None)
             return redirect(url_for('index'))
         # Handle upload new contract
         if 'upload_new_contract' in request.form:
             session.pop('contract_text', None)
+            session.pop('contract_filename', None)
             session.pop('qa_cache', None)
             return redirect(url_for('index'))
         # Handle file upload
@@ -64,14 +78,27 @@ def index():
         if contract_file and contract_file.filename:
             contract_text = extract_text_from_file(contract_file)
             session['contract_text'] = contract_text
+            session['contract_filename'] = contract_file.filename
             qa_cache = {}  # Reset cache for new contract
+            # Kiểm tra file có phải hợp đồng không
+            if contract_text and not is_contract_text(contract_text):
+                answer = "The uploaded file does not appear to be a contract. Please upload a valid contract for legal analysis."
+                session['qa_cache'] = qa_cache
+                return render_template('index.html', answer=answer, contract=contract_text, error=error, relevant_law_sections=[],
+                    contract_filename=contract_file.filename, question_history=[])
         else:
             contract_text = session.get('contract_text', '')
+            contract_filename = session.get('contract_filename', '')
         user_question = request.form.get('user_question', '').strip()
         if not user_question:
             error = "Question cannot be empty."
         elif len(user_question) > 500:
             error = "Question is too long (max 500 characters)."
+        elif not is_legal_question(user_question):
+            answer = "Sorry, I can only answer questions about contracts and US law."
+            session['qa_cache'] = qa_cache
+            return render_template('index.html', answer=answer, contract=contract_text, error=error, relevant_law_sections=[],
+                contract_filename=contract_filename, question_history=question_history)
         else:
             # Use contract_text and user_question as cache key
             cache_key = (contract_text, user_question)
@@ -98,7 +125,15 @@ def index():
                     answer = "Sorry, I cannot answer this question."
                 qa_cache[cache_key_str] = answer
             session['qa_cache'] = qa_cache
-    return render_template('index.html', answer=answer, contract=contract_text, error=error, relevant_law_sections=relevant_law_sections)
+    # Build question history for current contract
+    if contract_text and qa_cache:
+        prefix = str(hash(contract_text)) + '||'
+        for key in qa_cache:
+            if key.startswith(prefix):
+                q = key.split('||', 1)[1]
+                question_history.append(q)
+    return render_template('index.html', answer=answer, contract=contract_text, error=error, relevant_law_sections=relevant_law_sections,
+        contract_filename=contract_filename, question_history=question_history)
 
 if __name__ == '__main__':
     app.run(debug=True, port=8050, host='0.0.0.0')
