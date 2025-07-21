@@ -119,10 +119,10 @@ def index():
                     context = "\n".join([s['chunk'] for s in law_sections])
                     relevant_law_sections = law_sections
                 answer = legal_qa_answer(context, user_question, relevant_law_sections)
-                if answer:
+            if answer:
                     answer = re.sub(r'<\/?.*?think>', '', answer, flags=re.IGNORECASE).lstrip()
-                if not answer or "I cannot answer" in answer or "Sorry" in answer:
-                    answer = "Sorry, I cannot answer this question."
+            if not answer or "I cannot answer" in answer or "Sorry" in answer:
+                answer = "Sorry, I cannot answer this question."
                 qa_cache[cache_key_str] = answer
             session['qa_cache'] = qa_cache
     # Build question history for current contract
