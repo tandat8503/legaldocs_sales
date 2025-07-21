@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-from core.rag_chain import legal_qa_answer
+from core.rag_chain import legal_qa_answer, call_llm_custom
 from core.semantic_search import search_law_sections
 from core.milvus_utilis import search_laws, search_contracts
 from core.embedding import model as local_embedding_model
@@ -41,9 +41,37 @@ def is_contract_text(text):
     contract_keywords = ["agreement", "contract", "party", "obligation", "term", "warranty", "governing law", "indemnify", "confidentiality", "termination", "liability"]
     return any(kw in text.lower() for kw in contract_keywords)
 
-def is_legal_question(question):
-    legal_keywords = ["law", "ucc", "contract", "agreement", "clause", "legal", "section", "article", "obligation", "liability", "warranty", "governing law"]
-    return any(kw in question.lower() for kw in legal_keywords)
+def is_contract_analysis_question(question):
+    # Nhận diện các câu hỏi yêu cầu phân tích hợp đồng cụ thể
+    contract_phrases = [
+        "this contract", "the contract", "in the contract", "analyze contract", "analyze this contract", "what does the contract", "what do contract have", "what is in the contract", "terms of the contract", "contract content", "contract clause", "contract risk", "contract provision", "contract section", "contract analysis"
+    ]
+    q = question.lower()
+    return any(phrase in q for phrase in contract_phrases)
+
+def is_clearly_nonlegal_question(question):
+    # Một số từ khóa phổ biến ngoài phạm vi pháp lý (đã loại bỏ các từ liên quan đến stock, share, investment, finance, bank, money, currency, exchange, loan, credit, debt, insurance, tax, account, budget, income, expense, salary, wage, payment, bill, invoice, receipt, sell, buy, sale, market, shop, store, price, discount)
+    unrelated_keywords = [
+        'cook', 'recipe', 'food', 'weather', 'football', 'soccer', 'movie', 'music', 'game', 'travel', 'vacation', 'holiday', 'song', 'singer', 'actor', 'actress', 'film', 'youtube', 'tiktok', 'instagram', 'facebook', 'twitter', 'garden', 'plant', 'animal', 'pet', 'cat', 'dog', 'fish', 'bird', 'car', 'motorbike', 'bike', 'run', 'swim', 'gym', 'exercise', 'workout', 'draw', 'paint', 'art', 'fashion', 'clothes', 'dress', 'shoes', 'makeup', 'beauty', 'hair', 'skin', 'shopping', 'supermarket', 'mall', 'school', 'university', 'exam', 'test', 'teacher', 'student', 'math', 'physics', 'chemistry', 'biology', 'history', 'geography', 'poem', 'poetry', 'novel', 'story', 'book', 'author', 'writer', 'birthday', 'party', 'gift', 'present', 'love', 'relationship', 'marriage', 'dating', 'friend', 'family', 'parent', 'child', 'baby', 'kid', 'boy', 'girl', 'man', 'woman', 'husband', 'wife', 'brother', 'sister', 'uncle', 'aunt', 'grandparent', 'grandchild', 'neighbor', 'community', 'city', 'village', 'country', 'nation', 'government', 'politics', 'president', 'prime minister', 'minister', 'king', 'queen', 'prince', 'princess', 'army', 'military', 'war', 'peace', 'religion', 'god', 'buddha', 'jesus', 'allah', 'temple', 'church', 'mosque', 'pagoda', 'festival', 'holiday', 'event', 'concert', 'show', 'exhibition', 'conference', 'meeting', 'seminar', 'workshop', 'lecture', 'speech', 'presentation', 'news', 'newspaper', 'magazine', 'radio', 'tv', 'television', 'channel', 'program', 'series', 'episode', 'season', 'advertisement', 'ad', 'commercial', 'promotion', 'campaign', 'project', 'plan', 'goal', 'target', 'result', 'success', 'failure', 'problem', 'solution', 'idea', 'innovation', 'technology', 'science', 'computer', 'phone', 'tablet', 'laptop', 'internet', 'website', 'web', 'app', 'application', 'software', 'hardware', 'device', 'tool', 'machine', 'robot', 'ai', 'artificial intelligence', 'blockchain', 'crypto', 'bitcoin', 'ethereum'
+    ]
+    q = question.lower()
+    return any(kw in q for kw in unrelated_keywords)
+
+def classify_question_with_llm(question: str, contract_uploaded: bool) -> str:
+    prompt = f"""
+Classify the user's question into one of these categories:
+1.  contract_analysis: The user is asking to analyze, review, or find information within a specific contract.
+2.  general_legal_query: The user is asking a general question about law, UCC, etc., not specific to an uploaded document.
+3.  non_legal: The question is off-topic (e.g., about cooking, weather, sports).
+
+The user has {'UPLOADED' if contract_uploaded else 'NOT UPLOADED'} a contract.
+
+User Question: "{question}"
+
+Category:
+"""
+    response = call_llm_custom(prompt, max_tokens=10, temperature=0.0)
+    return response.strip().lower()
 
 # --- Session state ---
 if 'contract_text' not in st.session_state:
@@ -86,7 +114,24 @@ relevant_law_sections = []
 
 # --- Handle file upload ---
 if contract_file is not None:
+    # Check file size (max 5MB)
+    contract_file.seek(0, os.SEEK_END)
+    file_size = contract_file.tell()
+    contract_file.seek(0)
+    max_size = 5 * 1024 * 1024  # 5MB
+    if file_size > max_size:
+        st.warning("The uploaded file is too large (max 5MB). Please upload a smaller contract file.")
+        st.stop()
+    # Check file extension
+    filename = contract_file.name
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in ['.txt', '.pdf', '.docx']:
+        st.warning("Unsupported file type. Please upload a .txt, .pdf, or .docx contract.")
+        st.stop()
     contract_text = extract_text_from_file(contract_file)
+    if not contract_text or not contract_text.strip():
+        st.warning("The uploaded contract file is empty. Please upload a valid contract.")
+        st.stop()
     st.session_state['contract_text'] = contract_text
     st.session_state['contract_filename'] = contract_file.name
     st.session_state['qa_cache'] = {}
@@ -110,32 +155,45 @@ if submit_btn:
         error = "Question is too long (max 500 characters)."
         st.error(error)
         st.stop()
-    elif not is_legal_question(user_question):
-        answer = "Sorry, I can only answer questions about contracts and US law."
-        st.info(answer)
+    # Phân loại intent bằng LLM
+    question_type = classify_question_with_llm(user_question, bool(contract_text))
+    if question_type == 'non_legal':
+        st.warning("Your question appears unrelated to legal or contract topics. Please ask about contracts, US law, UCC, liens, secured transactions, or related legal topics.")
+        st.session_state['last_answered'] = True
+        st.stop()
+    elif question_type == 'contract_analysis' and not contract_text:
+        st.warning("You have not uploaded the contract yet. Please upload the contract so I can analyze it in detail.")
         st.session_state['last_answered'] = True
         st.stop()
     # Use contract_text and user_question as cache key
     cache_key_str = str(hash(contract_text)) + '||' + user_question
     if cache_key_str in qa_cache:
         answer = qa_cache[cache_key_str]
+        answer_type = st.session_state.get('last_answer_type', '')
     else:
         with st.spinner("Processing..."):
-            if contract_text:
-                contract_sections = search_contracts(user_question, filename=None, top_k=3, model_override=local_embedding_model)
+            if contract_text and question_type == 'contract_analysis':
+                relevant_contract_chunks = search_contracts(user_question, filename=contract_filename, top_k=3, model_override=local_embedding_model)
                 law_sections = search_laws(user_question, top_k=5, model_override=local_embedding_model)
-                context = contract_text + "\n\n" + "\n".join([s['chunk'] for s in law_sections])
+                contract_context = "\n\n".join([c['chunk'] for c in relevant_contract_chunks])
+                law_context_for_llm = "\n\n".join([s['chunk'] for s in law_sections])
+                context_for_llm = f"Relevant Contract Sections:\n{contract_context}\n\nRelevant Law Sections:\n{law_context_for_llm}"
                 relevant_law_sections = law_sections
+                answer = legal_qa_answer(context_for_llm, user_question, law_sections)
+                answer_type = 'contract_analysis'
             else:
                 law_sections = search_laws(user_question, top_k=5, model_override=local_embedding_model)
-                context = "\n".join([s['chunk'] for s in law_sections])
+                law_context_for_llm = "\n\n".join([s['chunk'] for s in law_sections])
+                context_for_llm = f"Relevant Law Sections:\n{law_context_for_llm}"
                 relevant_law_sections = law_sections
-            answer = legal_qa_answer(context, user_question, relevant_law_sections)
+                answer = legal_qa_answer(context_for_llm, user_question, law_sections)
+                answer_type = 'general_legal_query'
             if answer:
-                answer = re.sub(r'<\/? .*?think>', '', answer, flags=re.IGNORECASE).lstrip()
+                answer = re.sub(r'<\/?.*?think>', '', answer, flags=re.IGNORECASE).lstrip()
             if not answer or "I cannot answer" in answer or "Sorry" in answer:
                 answer = "Sorry, I cannot answer this question."
             qa_cache[cache_key_str] = answer
+            st.session_state['last_answer_type'] = answer_type
     st.session_state['qa_cache'] = qa_cache
     st.session_state['last_answered'] = True
     # Update question history
@@ -145,12 +203,19 @@ if submit_btn:
         st.session_state['question_history'] = question_history
     # Show answer
     st.success("**Answer:**")
+    # Ghi chú rõ nguồn trả lời
+    if contract_text and question_type == 'contract_analysis':
+        st.info("Analysis based on uploaded contract: " + st.session_state.get('contract_filename', ''))
+    elif question_type == 'general_legal_query':
+        st.info("General legal answer (no contract uploaded)")
     st.markdown(f"<div style='white-space: pre-wrap'>{answer}</div>", unsafe_allow_html=True)
     # Show relevant law sections
     if relevant_law_sections:
         st.info("**Relevant Law Sections:**")
         for section in relevant_law_sections:
             st.markdown(f"- **File:** {section['filename']}\n  **Content:** {section['chunk'][:300]}{'...' if len(section['chunk']) > 300 else ''}")
+    else:
+        st.info("No relevant law sections found for your question.")
     # Show question history
     if contract_text and question_history:
         st.info("**Question history for this contract:**")
