@@ -85,6 +85,7 @@ if 'question_history' not in st.session_state:
 
 # --- UI ---
 with st.form("qa_form"):
+    # Bỏ các button chọn vai trò người dùng
     contract_file = st.file_uploader("Upload contract (.txt, .pdf, .docx)", type=["txt", "pdf", "docx"], key="contract")
     if st.session_state['contract_text']:
         st.info(f"You are asking about contract: **{st.session_state['contract_filename']}**")
@@ -209,13 +210,32 @@ if submit_btn:
     elif question_type == 'general_legal_query':
         st.info("General legal answer (no contract uploaded)")
     st.markdown(f"<div style='white-space: pre-wrap'>{answer}</div>", unsafe_allow_html=True)
-    # Show relevant law sections
+    # Show relevant law sections in expander
     if relevant_law_sections:
-        st.info("**Relevant Law Sections:**")
-        for section in relevant_law_sections:
-            st.markdown(f"- **File:** {section['filename']}\n  **Content:** {section['chunk'][:300]}{'...' if len(section['chunk']) > 300 else ''}")
+        with st.expander("**📚 Relevant Law References**"):
+            for section in relevant_law_sections:
+                # Extract article and section numbers from filename (e.g., "9-523.txt" -> "Article 9, Section 523")
+                filename = section['filename']
+                article_num = filename.split('-')[0]
+                section_num = filename.split('-')[1].replace('.txt', '')
+                st.markdown(f"""
+                **UCC Article {article_num}, Section {section_num}**  
+                {section['chunk'][:300]}{'...' if len(section['chunk']) > 300 else ''}
+                """)
     else:
         st.info("No relevant law sections found for your question.")
+    
+    # Offer additional resources based on answer type
+    if answer and 'Would you like me to provide:' in answer:
+        st.write("---")
+        st.write("### Additional Resources")
+        resource_col1, resource_col2 = st.columns(2)
+        with resource_col1:
+            if st.button("📋 Get Detailed Checklist"):
+                st.session_state['requested_resource'] = 'checklist'
+        with resource_col2:
+            if st.button("📄 View Sample Templates"):
+                st.session_state['requested_resource'] = 'templates'
     # Show question history
     if contract_text and question_history:
         st.info("**Question history for this contract:**")
