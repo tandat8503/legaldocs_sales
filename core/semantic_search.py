@@ -1,4 +1,4 @@
-from core.milvus_utilis import search_laws
+from core.chroma_utilis import search_laws
 
 def search_law_sections(query, top_k=5):
     return search_laws(query, top_k=top_k)

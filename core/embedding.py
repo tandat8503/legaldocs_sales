@@ -12,8 +12,8 @@ load_time = time.time() - start_time
 print(f"✅ Model loaded in {load_time:.2f} seconds")
 
 # Chunk configuration
-CHUNK_SIZE = 300
-CHUNK_OVERLAP = 50
+CHUNK_SIZE = 1200
+CHUNK_OVERLAP = 150
 BATCH_SIZE = 32  # Process 32 chunks at a time
 
 def split_into_chunks(text: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> List[str]:

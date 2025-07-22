@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from core.rag_chain import legal_qa_answer, call_llm_custom
 from core.semantic_search import search_law_sections
-from core.milvus_utilis import search_laws, search_contracts
+from core.chroma_utilis import search_laws, search_contracts
 from core.embedding import model as local_embedding_model
 import fitz  # PyMuPDF
 import docx
@@ -143,36 +143,36 @@ if contract_file is not None:
 
 # --- Main QA logic ---
 if submit_btn:
-    contract_text = st.session_state.get('contract_text', '')
-    contract_filename = st.session_state.get('contract_filename', '')
-    qa_cache = st.session_state.get('qa_cache', {})
-    question_history = st.session_state.get('question_history', [])
-    user_question = st.session_state.get('user_question', '').strip()
-    if not user_question:
-        error = "Question cannot be empty."
-        st.error(error)
-        st.stop()
-    elif len(user_question) > 500:
-        error = "Question is too long (max 500 characters)."
-        st.error(error)
-        st.stop()
-    # Phân loại intent bằng LLM
-    question_type = classify_question_with_llm(user_question, bool(contract_text))
-    if question_type == 'non_legal':
-        st.warning("Your question appears unrelated to legal or contract topics. Please ask about contracts, US law, UCC, liens, secured transactions, or related legal topics.")
-        st.session_state['last_answered'] = True
-        st.stop()
-    elif question_type == 'contract_analysis' and not contract_text:
-        st.warning("You have not uploaded the contract yet. Please upload the contract so I can analyze it in detail.")
-        st.session_state['last_answered'] = True
-        st.stop()
-    # Use contract_text and user_question as cache key
-    cache_key_str = str(hash(contract_text)) + '||' + user_question
-    if cache_key_str in qa_cache:
-        answer = qa_cache[cache_key_str]
-        answer_type = st.session_state.get('last_answer_type', '')
-    else:
-        with st.spinner("Processing..."):
+    with st.spinner("Processing..."):
+        contract_text = st.session_state.get('contract_text', '')
+        contract_filename = st.session_state.get('contract_filename', '')
+        qa_cache = st.session_state.get('qa_cache', {})
+        question_history = st.session_state.get('question_history', [])
+        user_question = st.session_state.get('user_question', '').strip()
+        if not user_question:
+            error = "Question cannot be empty."
+            st.error(error)
+            st.stop()
+        elif len(user_question) > 500:
+            error = "Question is too long (max 500 characters)."
+            st.error(error)
+            st.stop()
+        # Phân loại intent bằng LLM
+        question_type = classify_question_with_llm(user_question, bool(contract_text))
+        if question_type == 'non_legal':
+            st.warning("Your question appears unrelated to legal or contract topics. Please ask about contracts, US law, UCC, liens, secured transactions, or related legal topics.")
+            st.session_state['last_answered'] = True
+            st.stop()
+        elif question_type == 'contract_analysis' and not contract_text:
+            st.warning("You have not uploaded the contract yet. Please upload the contract so I can analyze it in detail.")
+            st.session_state['last_answered'] = True
+            st.stop()
+        # Use contract_text and user_question as cache key
+        cache_key_str = str(hash(contract_text)) + '||' + user_question
+        if cache_key_str in qa_cache:
+            answer = qa_cache[cache_key_str]
+            answer_type = st.session_state.get('last_answer_type', '')
+        else:
             if contract_text and question_type == 'contract_analysis':
                 relevant_contract_chunks = search_contracts(user_question, filename=contract_filename, top_k=3, model_override=local_embedding_model)
                 law_sections = search_laws(user_question, top_k=5, model_override=local_embedding_model)
@@ -195,49 +195,47 @@ if submit_btn:
                 answer = "Sorry, I cannot answer this question."
             qa_cache[cache_key_str] = answer
             st.session_state['last_answer_type'] = answer_type
-    st.session_state['qa_cache'] = qa_cache
-    st.session_state['last_answered'] = True
-    # Update question history
-    if contract_text and qa_cache:
-        prefix = str(hash(contract_text)) + '||'
-        question_history = [key.split('||', 1)[1] for key in qa_cache if key.startswith(prefix)]
-        st.session_state['question_history'] = question_history
-    # Show answer
-    st.success("**Answer:**")
-    # Ghi chú rõ nguồn trả lời
-    if contract_text and question_type == 'contract_analysis':
-        st.info("Analysis based on uploaded contract: " + st.session_state.get('contract_filename', ''))
-    elif question_type == 'general_legal_query':
-        st.info("General legal answer (no contract uploaded)")
-    st.markdown(f"<div style='white-space: pre-wrap'>{answer}</div>", unsafe_allow_html=True)
-    # Show relevant law sections in expander
-    if relevant_law_sections:
-        with st.expander("**📚 Relevant Law References**"):
-            for section in relevant_law_sections:
-                # Extract article and section numbers from filename (e.g., "9-523.txt" -> "Article 9, Section 523")
-                filename = section['filename']
-                article_num = filename.split('-')[0]
-                section_num = filename.split('-')[1].replace('.txt', '')
-                st.markdown(f"""
-                **UCC Article {article_num}, Section {section_num}**  
-                {section['chunk'][:300]}{'...' if len(section['chunk']) > 300 else ''}
-                """)
-    else:
-        st.info("No relevant law sections found for your question.")
-    
-    # Offer additional resources based on answer type
-    if answer and 'Would you like me to provide:' in answer:
-        st.write("---")
-        st.write("### Additional Resources")
-        resource_col1, resource_col2 = st.columns(2)
-        with resource_col1:
-            if st.button("📋 Get Detailed Checklist"):
-                st.session_state['requested_resource'] = 'checklist'
-        with resource_col2:
-            if st.button("📄 View Sample Templates"):
-                st.session_state['requested_resource'] = 'templates'
-    # Show question history
-    if contract_text and question_history:
-        st.info("**Question history for this contract:**")
-        for q in question_history:
-            st.markdown(f"- {q}") 
+        st.session_state['qa_cache'] = qa_cache
+        st.session_state['last_answered'] = True
+        # Update question history
+        if contract_text and qa_cache:
+            prefix = str(hash(contract_text)) + '||'
+            question_history = [key.split('||', 1)[1] for key in qa_cache if key.startswith(prefix)]
+            st.session_state['question_history'] = question_history
+        # Show answer
+        st.success("Answer:")
+        # Ghi chú rõ nguồn trả lời
+        if contract_text and question_type == 'contract_analysis':
+            st.info("Analysis based on uploaded contract: " + st.session_state.get('contract_filename', ''))
+        elif question_type == 'general_legal_query':
+            st.info("General legal answer (no contract uploaded)")
+        st.markdown(answer)
+        # Show relevant law sections in expander
+        if relevant_law_sections:
+            with st.expander("**📚 Relevant Law References**"):
+                for section in relevant_law_sections:
+                    filename = section['filename']
+                    article_num = filename.split('-')[0]
+                    section_num = filename.split('-')[1].replace('.txt', '')
+                    st.markdown(f"""
+                    **UCC Article {article_num}, Section {section_num}**  
+                    {section['chunk'][:300]}{'...' if len(section['chunk']) > 300 else ''}
+                    """)
+        else:
+            st.info("No relevant law sections found for your question.")
+        # Offer additional resources based on answer type
+        if answer and 'Would you like me to provide:' in answer:
+            st.write("---")
+            st.write("### Additional Resources")
+            resource_col1, resource_col2 = st.columns(2)
+            with resource_col1:
+                if st.button("📋 Get Detailed Checklist"):
+                    st.session_state['requested_resource'] = 'checklist'
+            with resource_col2:
+                if st.button("📄 View Sample Templates"):
+                    st.session_state['requested_resource'] = 'templates'
+        # Show question history
+        if contract_text and question_history:
+            st.info("**Question history for this contract:**")
+            for q in question_history:
+                st.markdown(f"- {q}") 

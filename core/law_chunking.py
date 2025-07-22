@@ -1,6 +1,6 @@
 import os
 from embedding import split_into_chunks
-from milvus_utilis import save_to_laws
+from core.chroma_utilis import save_to_laws
 
 def process_all_law_sections(section_dir):
     for root, dirs, files in os.walk(section_dir):

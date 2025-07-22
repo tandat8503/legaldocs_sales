@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup, Tag
 import os
 import time
 import random
+from core.chroma_utilis import save_to_laws
 
 BASE_URL = "https://www.law.cornell.edu"
 UCC_INDEX = "https://www.law.cornell.edu/ucc"

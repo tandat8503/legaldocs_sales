@@ -3,10 +3,10 @@ RAG Chain Module - Hybrid mode using AI-based routing
 """
 
 import requests
-import json
 import time
 from typing import Optional
 from config.config import LLM_API_URL, OPENAI_API_KEY, LLM_MODEL_ID
+import re
 
 def call_llm_custom(prompt: str, max_tokens: int = 2048, temperature: float = 0.2) -> str:
     payload = {
@@ -37,14 +37,17 @@ When answering:
 - Always start with a short, helpful greeting.
 - Clearly restate or paraphrase the user's question in legal terms.
 - Identify and cite relevant UCC Articles and Sections that apply.
-- Provide a direct, legally accurate answer to the user's question, based only on facts provided.
+- Provide a direct, legally accurate answer to the user's question.
+- Base your answer strictly on the information provided. Do not assume facts not in evidence.
 - Include a short actionable checklist or next steps for the user.
 - Point out any legal risks, typical mistakes, or missing information.
+- If the user's legal role (e.g., secured party, debtor, seller, buyer) is not specified, ask for clarification.
+- Note that the UCC is adopted with variations across states. Always refer to state-specific rules where relevant.
 - Ask a clarifying question if the user's role, jurisdiction, or collateral type is unclear.
 - End by offering further help, such as generating a clause, checklist, or legal summary.
 - Do not speculate or invent contract details that were not provided.
 - Use plain, professional English (avoid legalese when not needed).
-- Keep the tone neutral, accurate, and helpful.
+- Format your output in markdown for better readability (e.g., use bullet points, headers, bold for UCC sections).
 
 User question:
 {user_question}
@@ -87,6 +90,7 @@ Now, answer the user's new question following the same structure and style as th
 """
     return call_llm_custom(prompt)
 
+
 def legal_qa_contract_answer(context: str, user_question: str) -> str:
     prompt = f"""
 You are a U.S. contract law attorney AI specializing in the Uniform Commercial Code (UCC).
@@ -98,12 +102,17 @@ Follow these instructions carefully:
 - Review and summarize relevant excerpts from the uploaded file (e.g., security interest clause, governing law, collateral description).
 - Apply relevant UCC Articles and Sections (e.g., §§ 9-203, 9-601, 9-102, etc.).
 - Provide a clear and legally accurate answer regarding enforceability, compliance, risks, or next steps.
+- Base your answer strictly on the information provided. Do not assume facts not in evidence.
 - Highlight legal risks or red flags (e.g., improper perfection, ambiguous collateral).
 - Add practical next steps or checklist for the user.
+- If the user's legal role (e.g., secured party, debtor, seller, buyer) is not specified, ask for clarification.
+- Note that the UCC is adopted with variations across states. Always refer to state-specific rules where relevant.
 - Avoid speculating beyond what's in the contract.
 - Cite specific UCC sections or law snippets if possible (e.g., "UCC §9-604(a) allows...").
 - If key context is missing (e.g., jurisdiction, role of user), ask a clarifying question.
 - End by offering additional assistance (e.g., model clause, checklist, risk memo).
+- Use plain, professional English (avoid legalese when not needed).
+- Format your output in markdown for better readability (e.g., use bullet points, headers, bold for UCC sections).
 
 User question:
 {user_question}
@@ -160,9 +169,29 @@ Now, answer the user's new question following the same structure and style as th
 """
     return call_llm_custom(prompt)
 
+def is_contract_context(text: str) -> bool:
+    contract_indicators = [
+        r"\b(the\s+)?debtor\b",
+        r"\bsecured\s+party\b",
+        r"\bsecurity\s+interest\b",
+        r"\bgoverning\s+law\b",
+        r"\bshall\s+be\b",
+        r"\bfinancing\s+statement\b",
+        r"\bucc-1\b",
+        r"\bgrant[s]?\s+a\s+security\s+interest\b",
+        r"\bassign[s]?\s+all\s+right[s]?\b",
+        r"\bguarantor\b",
+        r"\bthis agreement\b",
+        r"\bhereinafter referred to as\b",
+        r"\bwitnesseth\b"
+    ]
+    for pattern in contract_indicators:
+        if re.search(pattern, text, re.IGNORECASE):
+            return True
+    return False
+
 def legal_qa_answer(context: str, user_question: str, law_sections:Optional[list] = None) -> str:
-    # Nếu context chỉ có law (không có contract), dùng prompt few-shot
-    if context.strip().startswith("Relevant Law Sections:"):
-        return legal_qa_theory_answer(context, user_question)
-    else:
+    if is_contract_context(context):
         return legal_qa_contract_answer(context, user_question)
+    else:
+        return legal_qa_theory_answer(context, user_question)
